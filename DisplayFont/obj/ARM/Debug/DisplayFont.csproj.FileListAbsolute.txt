@@ -1,0 +1,16 @@
+C:\Users\bryansc\OneDrive\Visual Studio 2015\Projects\IoTSamples\SPIDisplay\DisplayFont\bin\ARM\Debug\DisplayFont.dll
+C:\Users\bryansc\OneDrive\Visual Studio 2015\Projects\IoTSamples\SPIDisplay\DisplayFont\bin\ARM\Debug\DisplayFont.pdb
+C:\Users\bryansc\OneDrive\Visual Studio 2015\Projects\IoTSamples\SPIDisplay\DisplayFont\bin\ARM\Debug\DisplayFont.pri
+C:\Users\bryansc\OneDrive\Visual Studio 2015\Projects\IoTSamples\SPIDisplay\DisplayFont\obj\ARM\Debug\DisplayFont.dll
+C:\Users\bryansc\OneDrive\Visual Studio 2015\Projects\IoTSamples\SPIDisplay\DisplayFont\obj\ARM\Debug\DisplayFont.pdb
+C:\Users\bryansc\OneDrive\Visual Studio 2015\Projects\IoTSamples\SPIDisplay\DisplayFont\obj\ARM\Debug\priconfig.xml
+C:\Users\bryansc\OneDrive\Visual Studio 2015\Projects\IoTSamples\SPIDisplay\DisplayFont\obj\ARM\Debug\priconfig.xml.intermediate
+C:\Users\bryansc\OneDrive\Visual Studio 2015\Projects\IoTSamples\SPIDisplay\DisplayFont\obj\ARM\Debug\layout.resfiles
+C:\Users\bryansc\OneDrive\Visual Studio 2015\Projects\IoTSamples\SPIDisplay\DisplayFont\obj\ARM\Debug\layout.resfiles.intermediate
+C:\Users\bryansc\OneDrive\Visual Studio 2015\Projects\IoTSamples\SPIDisplay\DisplayFont\obj\ARM\Debug\resources.resfiles
+C:\Users\bryansc\OneDrive\Visual Studio 2015\Projects\IoTSamples\SPIDisplay\DisplayFont\obj\ARM\Debug\resources.resfiles.intermediate
+C:\Users\bryansc\OneDrive\Visual Studio 2015\Projects\IoTSamples\SPIDisplay\DisplayFont\obj\ARM\Debug\pri.resfiles
+C:\Users\bryansc\OneDrive\Visual Studio 2015\Projects\IoTSamples\SPIDisplay\DisplayFont\obj\ARM\Debug\pri.resfiles.intermediate
+C:\Users\bryansc\OneDrive\Visual Studio 2015\Projects\IoTSamples\SPIDisplay\DisplayFont\obj\ARM\Debug\qualifiers.txt
+C:\Users\bryansc\OneDrive\Visual Studio 2015\Projects\IoTSamples\SPIDisplay\DisplayFont\obj\ARM\Debug\qualifiers.txt.intermediate
+C:\Users\bryansc\OneDrive\Visual Studio 2015\Projects\IoTSamples\SPIDisplay\DisplayFont\obj\ARM\Debug\MultipleQualifiersPerDimensionFound.txt

@@ -1,0 +1,2 @@
+C:\Users\bryansc\OneDrive\Visual Studio 2015\Projects\IoTSamples\SPIDisplay\DisplayFont\DisplayFont.csproj;arm
+C:\Users\bryansc\OneDrive\Visual Studio 2015\Projects\IoTSamples\SPIDisplay\SPIDisplay\SPIDisplay.csproj;arm
