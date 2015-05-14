@@ -5,6 +5,7 @@
     <UseEmulator>false</UseEmulator>
     <RemoteDebugEnabled>true</RemoteDebugEnabled>
     <RemoteDebugMachine>10.121.35.16</RemoteDebugMachine>
+    <UseAuthentication>false</UseAuthentication>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|ARM'">
     <DeviceId>30F105C9-681E-420b-A277-7C086EAD8A4E</DeviceId>

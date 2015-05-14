@@ -142,6 +142,10 @@
     </Page>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Adafruit_HX8357\Adafruit_HX8357.csproj">
+      <Project>{0eb551ad-aa4f-44cf-805f-8456be1a6b9e}</Project>
+      <Name>Adafruit_HX8357</Name>
+    </ProjectReference>
     <ProjectReference Include="..\DisplayFont\DisplayFont.csproj">
       <Project>{fc89ae75-f054-4434-b00e-a0c9642160b4}</Project>
       <Name>DisplayFont</Name>
