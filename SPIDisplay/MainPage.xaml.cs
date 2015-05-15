@@ -24,8 +24,6 @@
 
 using System;
 using System.Diagnostics;
-using System.Threading.Tasks;
-using System.Collections.Generic;
 using Windows.UI.Xaml.Controls;
 using DisplayFont;
 using Adafruit_HX8357;
@@ -33,48 +31,46 @@ using Adafruit_HX8357;
 namespace SPIDisplay
 {
 
-    public sealed partial class MainPage : Page
+    public sealed partial class MainPage
     {
-
-        private Tft Tft = new Tft();
+        private readonly Tft _tft = new Tft( 0, 25, "SPI0");
 
         public MainPage()
         {
             InitializeComponent();
 
-            // Register for the unloaded event so we can clean up upon exit
-            Unloaded += MainPage_Unloaded;
-
             InitAll();
-
-            Task.Delay(1000);
-            Tft.DrawColor(0xf800); //Red
-            Tft.DrawColor(0x07e0); //Green
-            //Tft.DrawColor(0x001f); //Blue
-            //Tft.DrawColor(0x0000); //Black
-            //Tft.DrawColor(0xffe0); //Yellow
-            //Tft.DrawColor(0xffff); //White
-
-            // Tft.FillRect(100, 100, 100, 100, 0xf800); // Red
-            //Tft.FillRect(100, 100, 100, 100, 0x07e0); // Green
-            //Tft.FillRect(100, 100, 100, 100, 0x001f); // Blue
-            //Tft.FillRect(100, 100, 100, 100, 0x0000); // Black
-            //Tft.FillRect(100, 100, 100, 100, 0xffe0); // Yellow
-            //Tft.FillRect(100, 100, 100, 100, 0xffff); // White
-
         }
 
         private async void InitAll()
         {
-            Debug.WriteLine("<-InitAll()");
-            await Tft.Begin();
-            Debug.WriteLine("<-InitAll()");
-        }
+            try
+            {
+                await _tft.Begin();
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine( "Exception" + ex.Message );
+                return;
+            }
 
-        private void MainPage_Unloaded(object sender, object args)
-        {
-            // Cleanup
-            Tft.Dispose();
+            _tft.DrawColor(0xf800); //Red
+            _tft.DrawColor(0x07e0); //Green
+            _tft.DrawColor(0x001f); //Blue
+            _tft.DrawColor(0x0000); //Black
+            _tft.DrawColor(0xffe0); //Yellow
+            _tft.DrawColor(0xffff); //White
+
+            // Tft.FillScreen(0x0000);
+
+            // _tft.FillRect(0, 0, 280, 180, 0xffe0); // Yellow
+
+            _tft.FillRect(0, 0, 10, 10, 0xf800); // Red
+            _tft.FillRect(100, 100, 100, 100, 0x07e0); // Green
+            _tft.FillRect(100, 100, 100, 100, 0x001f); // Blue
+            _tft.FillRect(100, 100, 100, 100, 0x0000); // Black
+            _tft.FillRect(100, 100, 100, 100, 0xffe0); // Yellow
+            _tft.FillRect(100, 100, 100, 100, 0xffff); // White
         }
     }
 }
