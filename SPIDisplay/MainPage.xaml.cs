@@ -61,9 +61,9 @@ namespace SPIDisplay
             _tft.DrawColor(0xffe0); //Yellow
             _tft.DrawColor(0xffff); //White
 
-            // Tft.FillScreen(0x0000);
+            _tft.FillScreen(0x0000);
 
-            // _tft.FillRect(0, 0, 280, 180, 0xffe0); // Yellow
+            _tft.FillRect(0, 0, 280, 180, 0xffe0); // Yellow
 
             _tft.FillRect(0, 0, 10, 10, 0xf800); // Red
             _tft.FillRect(100, 100, 100, 100, 0x07e0); // Green

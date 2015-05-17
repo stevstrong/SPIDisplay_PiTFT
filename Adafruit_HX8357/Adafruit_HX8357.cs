@@ -1,4 +1,28 @@
-﻿using System;
+﻿/*
+    Copyright(c) Microsoft Open Technologies, Inc. All rights reserved.
+
+    The MIT License(MIT)
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files(the "Software"), to deal
+    in the Software without restriction, including without limitation the rights
+    to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
+    copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions :
+
+    The above copyright notice and this permission notice shall be included in
+    all copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+    THE SOFTWARE.
+*/
+
+using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Collections.Generic;
@@ -78,9 +102,8 @@ namespace Adafruit_HX8357
             // Create SPI initialization settings
             var settings = new SpiConnectionSettings(SpiChipSelectLine)
             {
-                ClockFrequency = 31000000, // Datasheet specifies maximum SPI clock frequency of ???MHz
-                // DataBitLength = 32000000,
-                Mode = SpiMode.Mode0
+                ClockFrequency = 30000000, // Datasheet specifies maximum SPI clock frequency of ???MHz
+                Mode = SpiMode.Mode3
             };
 
             var spiAqs = SpiDevice.GetDeviceSelector(SpiControllerName);   // Find the selector string for the SPI bus controller
@@ -135,7 +158,6 @@ namespace Adafruit_HX8357
 
             DisplayWriteCommand(HX8357_DISPON); //display on
             await Task.Delay(50);
-
         }
 
 
@@ -152,8 +174,6 @@ namespace Adafruit_HX8357
 
         public void DrawColor(ushort color)
         {
-            // Debug.WriteLine("->DrawColor()");
-
             var hcolor = (byte)(color >> 8);
             var lcolor = (byte)(color & 0xff);
 
@@ -165,9 +185,7 @@ namespace Adafruit_HX8357
             }
 
             DisplayWriteCommand(new byte[] { 0x2C }); // HX8357_RAMWR   0x2C
-            // SetAddrWindow(0, 0, 100, 100);
             DisplayWriteData(data.ToArray());
-            // Debug.WriteLine("<-DrawColor()");
         }
 
 
@@ -175,7 +193,6 @@ namespace Adafruit_HX8357
         {
             // Debug.WriteLine("->FillRect({0},{1},{2},{3})", x, y, w, h);
 
-            // rudimentary clipping (drawChar w/big text requires this)
             if ((x >= HX8357_TFTWIDTH) || (y >= HX8357_TFTHEIGHT)) return;
 
             SetAddrWindow( x, y, (ushort)(x + w - 1), (ushort)(y + h - 1));
@@ -183,25 +200,22 @@ namespace Adafruit_HX8357
             var hcolor = (byte)(color >> 8);
             var lcolor = (byte)(color & 0xff);
 
-            var data = new List<byte>();
+            // Using the List implementation results in an exception when talking to SPI when the array exceeds
+            // 32K in size. 
+            // var data = new List<byte>();
+            // Using the single byte implementation is just very slow...
             for (y = h; y > 0; y--)
             {
                 for (x = w; x > 0; x--)
                 {
-                    // Debug.WriteLine( "hi = " + hi );
-                    // Debug.WriteLine( "lo = " + lo );
-                    // DisplayWriteData(hcolor);
-                    // DisplayWriteData(lcolor);
-                    data.Add(hcolor);
-                    data.Add(lcolor);
+                    DisplayWriteData(hcolor);
+                    DisplayWriteData(lcolor);
+                    // data.Add(hcolor);
+                    // data.Add(lcolor);
                 }
             }
             // Debug.WriteLine("data.Count = " + data.Count );
-            // data.Count = 100800
-
-            DisplayWriteData( data.ToArray() );
-
-            // Debug.WriteLine("<-FillRect()");
+            // DisplayWriteData( data.ToArray() );
         }
 
 
@@ -214,18 +228,27 @@ namespace Adafruit_HX8357
         // Send graphics data to the screen
         private void DisplayWriteData(byte[] data)
         {
-           //  Debug.WriteLine("DisplayWriteData(byte[] data) = " + BitConverter.ToString(data));
-            _dataCommandPin.Write(GpioPinValue.High);
-            _spiDisplay.Write(data);
+            //  Debug.WriteLine("DisplayWriteData(byte[] data) = " + BitConverter.ToString(data));
+            try
+            {
+                _dataCommandPin.Write(GpioPinValue.High);
+                _spiDisplay.Write(data);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine( data.Length );
+                Debug.WriteLine("Exception" + ex.Message);
+                // throw;
+            }
         }
 
 
         private void DisplayWriteData(byte data)
         {
             // Debug.WriteLine( data );
-            _dataCommandPin.Write(GpioPinValue.High);
             try
             {
+                _dataCommandPin.Write(GpioPinValue.High);
                 _spiDisplay.Write(new[] { data });
             }
             catch (Exception ex)
@@ -239,7 +262,6 @@ namespace Adafruit_HX8357
         // Send commands to the screen
         private void DisplayWriteCommand(byte[] command)
         {
-            // Debug.WriteLine( "Command = 0x" + BitConverter.ToString(command).Replace("-", ", 0x") );
             _dataCommandPin.Write(GpioPinValue.Low);
             _spiDisplay.Write(command);
         }
@@ -247,7 +269,6 @@ namespace Adafruit_HX8357
 
         private void SetAddrWindow(ushort x0, ushort y0, ushort x1, ushort y1)
         {
-            // Debug.WriteLine("->SetAddrWindow()");
             DisplayWriteCommand(HX8357_CASET); // Column addr set
             DisplayWriteData((byte)(x0 >> 8));
             DisplayWriteData((byte)(x0 & 0xFF)); // XSTART 
@@ -261,7 +282,6 @@ namespace Adafruit_HX8357
             DisplayWriteData((byte)y1);     // YEND
 
             DisplayWriteCommand(HX8357_RAMWR); // write to RAM
-            // Debug.WriteLine("<-SetAddrWindow()");
         }
 
 
