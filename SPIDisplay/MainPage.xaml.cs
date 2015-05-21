@@ -54,23 +54,38 @@ namespace SPIDisplay
                 return;
             }
 
-            _tft.DrawColor(0xf800); //Red
-            _tft.DrawColor(0x07e0); //Green
-            _tft.DrawColor(0x001f); //Blue
-            _tft.DrawColor(0x0000); //Black
-            _tft.DrawColor(0xffe0); //Yellow
-            _tft.DrawColor(0xffff); //White
+            while (true)
+            {
+                var sw = new Stopwatch();
+                sw.Start();
+                _tft.FillScreen(0x0000);
+                sw.Stop();
+                Debug.WriteLine( "FillScreen took " + sw.Elapsed.Seconds + " seconds." );
 
-            _tft.FillScreen(0x0000);
+                //_tft.DrawColor(0xf800); //Red
+                //_tft.DrawColor(0x07e0); //Green
+                //_tft.DrawColor(0x001f); //Blue
+                //_tft.DrawColor(0x0000); //Black
+                //_tft.DrawColor(0xffe0); //Yellow
+                //_tft.DrawColor(0xffff); //White
 
-            _tft.FillRect(0, 0, 280, 180, 0xffe0); // Yellow
+                _tft.FillRect(0, 0, 180, 180, 0xffe0); // Yellow
 
-            _tft.FillRect(0, 0, 10, 10, 0xf800); // Red
-            _tft.FillRect(100, 100, 100, 100, 0x07e0); // Green
-            _tft.FillRect(100, 100, 100, 100, 0x001f); // Blue
-            _tft.FillRect(100, 100, 100, 100, 0x0000); // Black
-            _tft.FillRect(100, 100, 100, 100, 0xffe0); // Yellow
-            _tft.FillRect(100, 100, 100, 100, 0xffff); // White
+                //for (short w = 0; w < 200; w++)
+                //{
+                //    for (short h = 0; h < 300; h++)
+                //    {
+                //       _tft.DrawPixel( w, h, 0x001f);
+                //    }
+                //}
+
+                _tft.FillRect(0, 0, 10, 10, 0xf800); // Red
+                _tft.FillRect(100, 100, 100, 100, 0x07e0); // Green
+                _tft.FillRect(100, 100, 100, 100, 0x001f); // Blue
+                _tft.FillRect(100, 100, 100, 100, 0x0000); // Black
+                _tft.FillRect(100, 100, 100, 100, 0xffe0); // Yellow
+                _tft.FillRect(100, 100, 100, 100, 0xffff); // White
+            }
         }
     }
 }

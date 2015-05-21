@@ -1,5 +1,7 @@
-﻿#ifndef _ADAFRUIT_HX8357_H
-#define _ADAFRUIT_HX8357_H
+﻿//#ifndef _ADAFRUIT_HX8357_H
+//#define _ADAFRUIT_HX8357_H
+
+#pragma once
 
 #define HX8357D 0xD
 #define HX8357B 0xB
@@ -90,38 +92,31 @@ namespace PiTFT
     public ref class Display sealed
     {
     public:
-        Display(int8_t _CS, int8_t _DC, int8_t _RST = -1); // Constructor.
-        void begin(uint8_t),
-            setAddrWindow(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1),
-            pushColor(uint16_t color),
-            fillScreen(uint16_t color),
-            drawPixel(int16_t x, int16_t y, uint16_t color),
-            drawFastVLine(int16_t x, int16_t y, int16_t h, uint16_t color),
-            drawFastHLine(int16_t x, int16_t y, int16_t w, uint16_t color),
-            fillRect(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t color),
-            setRotation(uint8_t r),
-            invertDisplay(boolean i);
-        uint16_t color565(uint8_t r, uint8_t g, uint8_t b);
+        Display(); // Constructor.
 
-        void spiwrite(uint8_t),
-            writecommand(uint8_t c),
-            writedata(uint8_t d);
+        void begin();
+        void setAddrWindow(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1);
+        // void pushColor(uint16_t color);
+        void fillScreen(uint16_t color);
+        void drawPixel(int16_t x, int16_t y, uint16_t color);
+        // void drawFastVLine(int16_t x, int16_t y, int16_t h, uint16_t color);
+        // void drawFastHLine(int16_t x, int16_t y, int16_t w, uint16_t color);
+        void fillRect(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t color);
+        // void setRotation(uint8_t r);
+        // void invertDisplay(boolean i);
+        // uint16_t color565(uint8_t r, uint8_t g, uint8_t b);
+
+        void writecommand(uint8_t c);
+        void writedata(uint8_t d);
 
     private:
-        const String SpiControllerName = "SPI0";  // For Raspberry Pi 2, use SPI0
-        const int SpiChipSelectLine = 0;       // Line 0 maps to physical pin number 24 on the Rpi2
-        const int DataCommandPin = 25;         // We use GPIO 22 since it's conveniently near the SPI pins
-        const int ResetPin = 24;               // We use GPIO 23 since it's conveniently near the SPI pins
-
-        Windows::Devices::Gpio::GpioPin ^pin_;
-
         // Definitions for SPI and GPIO
-        SpiDevice _spiDisplay;
-        GpioController _ioController;
-        GpioPin _dataCommandPin;
-        GpioPin _resetPin;
-
-        uint32_t  _cs, _dc, _rst, _mosi, _miso, _sclk;
+        SpiDevice ^_spiDisplay;
+        
+        const char* _sclk = "SPI0"; // For Raspberry Pi 2, use SPI0
+        const int CS_PIN = 0;
+        const int DC_PIN = 25;
+        Windows::Devices::Gpio::GpioPin ^dc_; // We use GPIO 22 since it's conveniently near the SPI pins
+        
     };
 }
-#endif

@@ -23,9 +23,8 @@
 */
 
 using System;
-using System.Diagnostics;
-using System.Threading.Tasks;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Windows.Devices.Enumeration;
 using Windows.Devices.Gpio;
 using Windows.Devices.Spi;
@@ -37,8 +36,8 @@ namespace Adafruit_HX8357
         // Display Properties
         private static ushort HX8357_TFTWIDTH = 320;
         private static ushort HX8357_TFTHEIGHT = 480;
-        private ushort _width = HX8357_TFTWIDTH;
-        private ushort _height = HX8357_TFTHEIGHT;
+        private static ushort _width = HX8357_TFTWIDTH;
+        private static ushort _height = HX8357_TFTWIDTH;
         private static uint ROTATION = 0;
 
         private string SpiControllerName; // For Raspberry Pi 2, use SPI0
@@ -47,7 +46,6 @@ namespace Adafruit_HX8357
 
         // Definitions for SPI and GPIO
         private SpiDevice _spiDisplay;
-        private SpiBusInfo _spiBusInfo;
         private GpioController _ioController;
         private GpioPin _dataCommandPin;
 
@@ -81,14 +79,12 @@ namespace Adafruit_HX8357
         private static readonly byte MADCTL_BGR = 0x08;
         private static readonly byte MADCTL_MH = 0x04;
 
-
         public Tft( int cs, int dc, string sclk )
         {
             SpiControllerName = sclk;
             SpiChipSelectLine = cs;
             DataCommandPin = dc;
         }
-
 
         public async Task Begin()
         {
@@ -102,8 +98,8 @@ namespace Adafruit_HX8357
             // Create SPI initialization settings
             var settings = new SpiConnectionSettings(SpiChipSelectLine)
             {
-                ClockFrequency = 30000000, // Datasheet specifies maximum SPI clock frequency of ???MHz
-                Mode = SpiMode.Mode3
+                ClockFrequency = 16000000, // Datasheet specifies maximum SPI clock frequency of ???MHz
+                Mode = SpiMode.Mode0
             };
 
             var spiAqs = SpiDevice.GetDeviceSelector(SpiControllerName);   // Find the selector string for the SPI bus controller
@@ -160,17 +156,15 @@ namespace Adafruit_HX8357
             await Task.Delay(50);
         }
 
-
         public void DrawPixel(short x, short y, ushort color)
         {
             if ((x < 0) || (x >= HX8357_TFTWIDTH) || (y < 0) || (y >= HX8357_TFTHEIGHT)) return;
 
             SetAddrWindow((ushort)x, (ushort)y, (ushort)(x + 1), (ushort)(y + 1));
 
-            DisplayWriteData((byte)(color >> 8));
-            DisplayWriteData((byte)color);
+            _dataCommandPin.Write(GpioPinValue.High);
+            _spiDisplay.Write(new[] { (byte)(color >> 8), (byte)color });
         }
-
 
         public void DrawColor(ushort color)
         {
@@ -184,80 +178,57 @@ namespace Adafruit_HX8357
                 data.Add(lcolor);
             }
 
-            DisplayWriteCommand(new byte[] { 0x2C }); // HX8357_RAMWR   0x2C
+            DisplayWriteCommand(HX8357_RAMWR); // write to RAM
             DisplayWriteData(data.ToArray());
         }
 
-
         public void FillRect(ushort x, ushort y, ushort w, ushort h, ushort color)
         {
-            // Debug.WriteLine("->FillRect({0},{1},{2},{3})", x, y, w, h);
-
             if ((x >= HX8357_TFTWIDTH) || (y >= HX8357_TFTHEIGHT)) return;
 
             SetAddrWindow( x, y, (ushort)(x + w - 1), (ushort)(y + h - 1));
 
-            var hcolor = (byte)(color >> 8);
-            var lcolor = (byte)(color & 0xff);
+            var data = new[] { (byte)(color >> 8), (byte)(color) };
 
-            // Using the List implementation results in an exception when talking to SPI when the array exceeds
-            // 32K in size. 
-            // var data = new List<byte>();
-            // Using the single byte implementation is just very slow...
+            _dataCommandPin.Write(GpioPinValue.High);
             for (y = h; y > 0; y--)
-            {
                 for (x = w; x > 0; x--)
-                {
-                    DisplayWriteData(hcolor);
-                    DisplayWriteData(lcolor);
-                    // data.Add(hcolor);
-                    // data.Add(lcolor);
-                }
-            }
-            // Debug.WriteLine("data.Count = " + data.Count );
-            // DisplayWriteData( data.ToArray() );
+                    _spiDisplay.Write( data );
         }
-
 
         public void FillScreen(ushort color)
         {
             FillRect(0, 0, HX8357_TFTWIDTH, HX8357_TFTHEIGHT, color);
         }
 
+        //private void SpiWrite(ushort c)
+        //{
+        //    // Fast SPI bitbang swiped from LPD8806 library
+        //    for (ushort bit = 0x80; bit; bit >>= 1 )
+        //    {
+        //        if (c & bit)
+        //        {
+        //            //digitalWrite(_mosi, HIGH); 
+        //            *mosiport |= mosipinmask;
+        //        }
+        //        else
+        //        {
+        //            //digitalWrite(_mosi, LOW); 
+        //            *mosiport &= ~mosipinmask;
+        //        }
+        //        //digitalWrite(_sclk, HIGH);
+        //        *clkport |= clkpinmask;
+        //        //digitalWrite(_sclk, LOW);
+        //        *clkport &= ~clkpinmask;
+        //    }
+        //}
 
         // Send graphics data to the screen
         private void DisplayWriteData(byte[] data)
         {
-            //  Debug.WriteLine("DisplayWriteData(byte[] data) = " + BitConverter.ToString(data));
-            try
-            {
-                _dataCommandPin.Write(GpioPinValue.High);
-                _spiDisplay.Write(data);
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine( data.Length );
-                Debug.WriteLine("Exception" + ex.Message);
-                // throw;
-            }
+            _dataCommandPin.Write(GpioPinValue.High);
+            _spiDisplay.Write(data);
         }
-
-
-        private void DisplayWriteData(byte data)
-        {
-            // Debug.WriteLine( data );
-            try
-            {
-                _dataCommandPin.Write(GpioPinValue.High);
-                _spiDisplay.Write(new[] { data });
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine("Exception" + ex.Message);
-                throw;
-            }
-        }
-
 
         // Send commands to the screen
         private void DisplayWriteCommand(byte[] command)
@@ -266,24 +237,16 @@ namespace Adafruit_HX8357
             _spiDisplay.Write(command);
         }
 
-
         private void SetAddrWindow(ushort x0, ushort y0, ushort x1, ushort y1)
         {
             DisplayWriteCommand(HX8357_CASET); // Column addr set
-            DisplayWriteData((byte)(x0 >> 8));
-            DisplayWriteData((byte)(x0 & 0xFF)); // XSTART 
-            DisplayWriteData((byte)(x1 >> 8));
-            DisplayWriteData((byte)(x1 & 0xFF)); // XEND
+            DisplayWriteData(new [] { (byte)(x0 >> 8), (byte)(x0 & 0xFF), (byte)(x1 >> 8), (byte)(x1 & 0xFF) });
 
             DisplayWriteCommand(HX8357_PASET); // Row addr set
-            DisplayWriteData((byte)(y0 >> 8));
-            DisplayWriteData((byte)y0);     // YSTART
-            DisplayWriteData((byte)(y1 >> 8));
-            DisplayWriteData((byte)y1);     // YEND
+            DisplayWriteData(new[] { (byte)(y0 >> 8), (byte)y0, (byte)(y1 >> 8), (byte)y1 });
 
             DisplayWriteCommand(HX8357_RAMWR); // write to RAM
         }
-
 
         public void SetRotation( uint m )
         {
@@ -308,7 +271,7 @@ namespace Adafruit_HX8357
                     _height = HX8357_TFTWIDTH;
                     break;
                 case 2:
-                    DisplayWriteData(MADCTL_RGB);
+                    DisplayWriteData(new [] { MADCTL_RGB });
                     _width = HX8357_TFTWIDTH;
                     _height = HX8357_TFTHEIGHT;
                     break;

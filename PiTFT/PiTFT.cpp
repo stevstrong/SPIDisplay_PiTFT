@@ -5,107 +5,88 @@
 using namespace PiTFT;
 using namespace Platform;
 using namespace Windows::Foundation;
+using namespace Windows::Devices::Enumeration;
 using namespace Windows::Devices::Gpio;
 using namespace Windows::Devices::Spi;
 using namespace Windows::System::Threading;
 using namespace concurrency;
 
-Display::Display(int8_t cs, int8_t dc, int8_t rst)
+Display::Display() // char* sclk)
 {
-    _cs = cs;
-    _dc = dc;
-    _rst = rst;
-    _mosi = _sclk = 0;
+//     _sclk = sclk;
 }
-
-void Display::spiwrite(uint8_t c)
-{
-    _spiDisplay.setClockDivider(11); // 8-ish MHz (full! speed!)
-    _spiDisplay.setBitOrder(MSBFIRST);
-    _spiDisplay.setDataMode(SPI_MODE0);
-    _spiDisplay.Write(c);
-
-}
-
 
 void Display::writecommand(uint8_t c)
 {
-   //  *dcport &= ~dcpinmask;
-    //digitalWrite(_dc, LOW);
-    // *clkport &= ~clkpinmask;
-    //digitalWrite(_sclk, LOW);
-    // *csport &= ~cspinmask;
-    //digitalWrite(_cs, LOW);
-
-    spiwrite(c);
-    //Serial.print("Command 0x"); Serial.println(c, HEX);
-
-    // *csport |= cspinmask;
-    //digitalWrite(_cs, HIGH);
+    // Debug.Writeln( "Data 0x" + c );
+    dc_->Write(GpioPinValue::Low);
+    _spiDisplay->Write( c );
 }
 
-
-void Display::writedata(uint8_t c) {
-    // *dcport |= dcpinmask;
-    //digitalWrite(_dc, HIGH);
-    // *clkport &= ~clkpinmask;
-    //digitalWrite(_sclk, LOW);
-    // *csport &= ~cspinmask;
-    //digitalWrite(_cs, LOW);
-
-    spiwrite(c);
-    //Serial.print("Data 0x"); Serial.println(c, HEX);
-
-    //digitalWrite(_cs, HIGH);
-    // *csport |= cspinmask;
+void Display::writedata(uint8_t d)
+ {
+    // Debug.Writeln( "Data 0x" + c );
+    dc_->Write(GpioPinValue::High);
+    _spiDisplay->Write(d);
 }
 
-
-void Display::begin(uint8_t type)
+void Display::begin()
 {
-    try
+    auto gpio = GpioController::GetDefault();
+    
+    if (gpio == nullptr)
     {
-        auto gpio = GpioController::GetDefault(); // Get the default GPIO controller on the system
-
-        // Initialize a pin as output for the Data/Command line on the display
-        pin_ = gpio=>OpenPin(DataCommandPin);
-
-        _dataCommandPin.Write(GpioPinValue.High);
-        _dataCommandPin.SetDriveMode(GpioPinDriveMode.Output);
-
-        // Initialize a pin as output for the hardware Reset line on the display
-        _resetPin = _ioController.OpenPin(ResetPin);
-        _resetPin.Write(GpioPinValue.High);
-        _resetPin.SetDriveMode(GpioPinDriveMode.Output);
+        dc_ = nullptr;
+        return;
     }
-    // If initialization fails, throw an exception
-    catch (Exception ex)
+    // Initialize a pin as output for the Data/Command line on the display
+    dc_ = gpio->OpenPin(DC_PIN);
+    dc_->Write(GpioPinValue::High);
+    dc_->SetDriveMode(GpioPinDriveMode::Output);
+
+    SpiConnectionSettings ^settings = ref new SpiConnectionSettings(CS_PIN);
+    String^ querySyntax = SpiDevice::GetDeviceSelector("SPI0");
+    auto asyncop = DeviceInformation::FindAllAsync(querySyntax);
+    while (asyncop->Status != AsyncStatus::Completed)
     {
-        throw new Exception("GPIO initialization failed", ex);
+        if (asyncop->Status == AsyncStatus::Error)
+        {
+            // Debug.WriteLine ( "Could not find information for device '%S': %d", name, asyncop->E
+            return;
+        }
+        Sleep(50);
     }
 
-
-    SpiConnectionSettings ^settings = ref new SpiConnectionSettings(SpiChipSelectLine);
-
-    try
+    auto info = asyncop->GetResults();
+    if (info == nullptr || info->Size == 0)
     {
-        
-        settings^ ClockFrequency = 30000000;
-
-            // DataBitLength = 32,
-            Mode = SpiMode.Mode0
-        }; //  Create SPI initialization settings
-           // Datasheet specifies maximum SPI clock frequency of 10MHz
-
-        var spiAqs = SpiDevice.GetDeviceSelector(SpiControllerName);   // Find the selector string for the SPI bus controller
-        var devicesInfo = await DeviceInformation.FindAllAsync(spiAqs);  // Find the SPI bus controller device with our selector string
-        _spiDisplay = await SpiDevice.FromIdAsync(devicesInfo[0].Id, settings); // Create an SpiDevice with our bus controller and SPI settings
-
+        return;
     }
-    catch (Exception ex) // If initialization fails, display the exception and stop running
+
+    String^ id = info->GetAt(0)->Id;
+
+    settings->ClockFrequency = 30000000;
+    settings->Mode = SpiMode::Mode0;
+
+    auto spideviceop = SpiDevice::FromIdAsync(id, settings);
+    while (spideviceop->Status != AsyncStatus::Completed)
     {
-        throw new Exception("SPI Initialization Failed", ex);
+        if (spideviceop->Status == AsyncStatus::Error)
+        {
+            // PyErr_Format(PyExc_RuntimeError, "Could get SPI device: %d", spideviceop->ErrorCode);
+            return;
+        }
+        Sleep(50);
     }
+    
+    auto spidevice = spideviceop->GetResults();
+    if (spidevice == nullptr)
+    {
+        return;
+    }
+    _spiDisplay = spidevice;
+
+
     writecommand(HX8357_SWRESET);
 
     // setextc
@@ -113,7 +94,9 @@ void Display::begin(uint8_t type)
     writedata(0xFF);
     writedata(0x83);
     writedata(0x57);
-    delay(300);
+    
+    Sleep( 300 );
+
     // setRGB which also enables SDO
     writecommand(HX8357_SETRGB);
     writedata(0x80);  //enable SDO pin!
@@ -206,16 +189,14 @@ void Display::begin(uint8_t type)
     writedata(0x02);
 
     writecommand(HX8357_SLPOUT); //Exit Sleep
-    delay(150);
+    Sleep( 150 );
 
     writecommand(HX8357_DISPON);  // display on
-    delay(50);
-
+    Sleep( 50 );
 }
 
 void Display::setAddrWindow(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1)
 {
-
     writecommand(HX8357_CASET); // Column addr set
     writedata(x0 >> 8);
     writedata(x0 & 0xFF);     // XSTART 
@@ -231,6 +212,53 @@ void Display::setAddrWindow(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1)
     writecommand(HX8357_RAMWR); // write to RAM
 }
 
+void Display::drawPixel(int16_t x, int16_t y, uint16_t color) {
+
+    if ((x < 0) || (x >= HX8357_TFTWIDTH) || (y < 0) || (y >= HX8357_TFTHEIGHT)) return;
+
+    setAddrWindow(x, y, x + 1, y + 1);
+
+    //digitalWrite(_dc, HIGH);
+    //digitalWrite(_cs, LOW);
+
+    writedata(color >> 8);
+    writedata(color);
+
+    //digitalWrite(_cs, HIGH);
+}
+
+void Display::fillScreen(uint16_t color) {
+    fillRect(0, 0, HX8357_TFTWIDTH, HX8357_TFTHEIGHT, color);
+}
+
+// fill a rectangle
+void Display::fillRect(int16_t x, int16_t y, int16_t w, int16_t h,
+    uint16_t color) {
+
+    // rudimentary clipping (drawChar w/big text requires this)
+    if ((x >= HX8357_TFTWIDTH) || (y >= HX8357_TFTHEIGHT)) return;
+    if ((x + w - 1) >= HX8357_TFTWIDTH)  w = HX8357_TFTWIDTH - x;
+    if ((y + h - 1) >= HX8357_TFTHEIGHT) h = HX8357_TFTHEIGHT - y;
+
+    setAddrWindow(x, y, x + w - 1, y + h - 1);
+
+    uint8_t hi = color >> 8, lo = color;
+
+    //digitalWrite(_dc, HIGH);
+    //digitalWrite(_cs, LOW);
+
+    for (y = h; y>0; y--)
+    {
+        for (x = w; x>0; x--)
+        {
+            writedata(hi);
+            writedata(lo);
+        }
+    }
+    //digitalWrite(_cs, HIGH);
+}
+
+/*
 void Display::pushColor(uint16_t color) {
     //digitalWrite(_dc, HIGH);
     // *dcport |= dcpinmask;
@@ -243,25 +271,6 @@ void Display::pushColor(uint16_t color) {
     // *csport |= cspinmask;
     //digitalWrite(_cs, HIGH);
 }
-
-void Display::drawPixel(int16_t x, int16_t y, uint16_t color) {
-
-    if ((x < 0) || (x >= _width) || (y < 0) || (y >= _height)) return;
-
-    setAddrWindow(x, y, x + 1, y + 1);
-
-    //digitalWrite(_dc, HIGH);
-    // *dcport |= dcpinmask;
-    //digitalWrite(_cs, LOW);
-    // *csport &= ~cspinmask;
-
-    spiwrite(color >> 8);
-    spiwrite(color);
-
-    // *csport |= cspinmask;
-    //digitalWrite(_cs, HIGH);
-}
-
 
 void Display::drawFastVLine(int16_t x, int16_t y, int16_t h,
     uint16_t color) {
@@ -276,19 +285,15 @@ void Display::drawFastVLine(int16_t x, int16_t y, int16_t h,
 
     uint8_t hi = color >> 8, lo = color;
 
-    // *dcport |= dcpinmask;
     //digitalWrite(_dc, HIGH);
-    // *csport &= ~cspinmask;
     //digitalWrite(_cs, LOW);
 
     while (h--) {
         spiwrite(hi);
         spiwrite(lo);
     }
-    // *csport |= cspinmask;
     //digitalWrite(_cs, HIGH);
 }
-
 
 void Display::drawFastHLine(int16_t x, int16_t y, int16_t w,
     uint16_t color) {
@@ -299,50 +304,14 @@ void Display::drawFastHLine(int16_t x, int16_t y, int16_t w,
     setAddrWindow(x, y, x + w - 1, y);
 
     uint8_t hi = color >> 8, lo = color;
-    // *dcport |= dcpinmask;
-    // *csport &= ~cspinmask;
     //digitalWrite(_dc, HIGH);
     //digitalWrite(_cs, LOW);
     while (w--) {
         spiwrite(hi);
         spiwrite(lo);
     }
-    // *csport |= cspinmask;
     //digitalWrite(_cs, HIGH);
 }
-
-void Display::fillScreen(uint16_t color) {
-    fillRect(0, 0, _width, _height, color);
-}
-
-// fill a rectangle
-void Display::fillRect(int16_t x, int16_t y, int16_t w, int16_t h,
-    uint16_t color) {
-
-    // rudimentary clipping (drawChar w/big text requires this)
-    if ((x >= _width) || (y >= _height)) return;
-    if ((x + w - 1) >= _width)  w = _width - x;
-    if ((y + h - 1) >= _height) h = _height - y;
-
-    setAddrWindow(x, y, x + w - 1, y + h - 1);
-
-    uint8_t hi = color >> 8, lo = color;
-
-    // *dcport |= dcpinmask;
-    //digitalWrite(_dc, HIGH);
-    // *csport &= ~cspinmask;
-    //digitalWrite(_cs, LOW);
-
-    for (y = h; y>0; y--) {
-        for (x = w; x>0; x--) {
-            spiwrite(hi);
-            spiwrite(lo);
-        }
-    }
-    //digitalWrite(_cs, HIGH);
-    // *csport |= cspinmask;
-}
-
 
 // Pass 8-bit (each) R,G,B, get back 16-bit packed color
 uint16_t Display::color565(uint8_t r, uint8_t g, uint8_t b) {
@@ -390,3 +359,4 @@ void Display::setRotation(uint8_t m) {
 void Display::invertDisplay(boolean i) {
     writecommand(i ? HX8357_INVON : HX8357_INVOFF);
 }
+*/
